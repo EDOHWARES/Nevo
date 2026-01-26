@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use soroban_sdk::{Address, BytesN, Env, String, Symbol};
 
 use crate::base::types::PoolState;
@@ -65,8 +66,7 @@ pub fn emergency_withdraw_requested(
     unlock_time: u64,
 ) {
     let topics = (Symbol::new(env, "emergency_withdraw_requested"), admin);
-    env.events()
-        .publish(topics, (token, amount, unlock_time));
+    env.events().publish(topics, (token, amount, unlock_time));
 }
 
 pub fn emergency_withdraw_executed(env: &Env, admin: Address, token: Address, amount: i128) {

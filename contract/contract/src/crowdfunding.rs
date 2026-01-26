@@ -4,8 +4,8 @@ use crate::base::{
     errors::CrowdfundingError,
     events,
     types::{
-        CampaignDetails, DisbursementRequest, EmergencyWithdrawal, MultiSigConfig, PoolConfig,
-        PoolMetrics, PoolState, StorageKey,
+        CampaignDetails, EmergencyWithdrawal, MultiSigConfig, PoolConfig, PoolMetrics, PoolState,
+        StorageKey,
     },
 };
 use crate::interfaces::crowdfunding::CrowdfundingTrait;
@@ -28,7 +28,7 @@ impl CrowdfundingTrait for CrowdfundingContract {
         }
         creator.require_auth();
 
-        if title.len() == 0 {
+        if title.is_empty() {
             return Err(CrowdfundingError::InvalidTitle);
         }
 
@@ -68,6 +68,7 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .ok_or(CrowdfundingError::CampaignNotFound)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn save_pool(
         env: Env,
         name: String,
@@ -84,7 +85,7 @@ impl CrowdfundingTrait for CrowdfundingContract {
         creator.require_auth();
 
         // Validate inputs
-        if name.len() == 0 {
+        if name.is_empty() {
             return Err(CrowdfundingError::InvalidPoolName);
         }
 
@@ -99,11 +100,11 @@ impl CrowdfundingTrait for CrowdfundingContract {
         // Validate multi-sig configuration if provided
         let multi_sig_config = match (required_signatures, signers) {
             (Some(req_sigs), Some(signer_list)) => {
-                let signer_count = signer_list.len() as u32;
+                let signer_count = signer_list.len();
                 if req_sigs == 0 || req_sigs > signer_count {
                     return Err(CrowdfundingError::InvalidMultiSigConfig);
                 }
-                if signer_list.len() == 0 {
+                if signer_list.is_empty() {
                     return Err(CrowdfundingError::InvalidSignerCount);
                 }
                 Some(MultiSigConfig {
@@ -303,7 +304,7 @@ impl CrowdfundingTrait for CrowdfundingContract {
         // For this task we assume the token interface is available via soroban_sdk::token
         use soroban_sdk::token;
         let token_client = token::Client::new(&env, &asset);
-        token_client.transfer(&contributor, &env.current_contract_address(), &amount);
+        token_client.transfer(&contributor, env.current_contract_address(), &amount);
 
         // Update metrics
         let metrics_key = StorageKey::PoolMetrics(pool_id);
@@ -320,16 +321,14 @@ impl CrowdfundingTrait for CrowdfundingContract {
         env.storage().instance().set(&metrics_key, &metrics);
 
         // Emit event
-        let topics = (soroban_sdk::Symbol::new(&env, "contribution"), pool_id);
-        env.events().publish(
-            topics,
-            (
-                contributor,
-                asset,
-                amount,
-                env.ledger().timestamp(),
-                is_private,
-            ),
+        events::contribution(
+            &env,
+            pool_id,
+            contributor,
+            asset,
+            amount,
+            env.ledger().timestamp(),
+            is_private,
         );
 
         Ok(())

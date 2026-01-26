@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use soroban_sdk::{
-    testutils::{Address as _, Events, Ledger},
-    Address, BytesN, Env, String, TryIntoVal, Vec,
+    testutils::{Address as _, Ledger},
+    Address, BytesN, Env, String, Vec,
 };
 
 use crate::{
@@ -489,15 +489,15 @@ fn test_pause_unpause_full_cycle() {
     client.initialize(&admin);
 
     // Initial state
-    assert_eq!(client.is_paused(), false);
+    assert!(!client.is_paused());
 
     // Pause
     client.pause();
-    assert_eq!(client.is_paused(), true);
+    assert!(client.is_paused());
 
     // Unpause
     client.unpause();
-    assert_eq!(client.is_paused(), false);
+    assert!(!client.is_paused());
 }
 
 #[test]
@@ -521,7 +521,7 @@ fn test_admin_auth_for_pause() {
             },
         }])
         .pause();
-    assert_eq!(client.is_paused(), true);
+    assert!(client.is_paused());
 }
 
 #[test]
@@ -612,7 +612,7 @@ fn test_getters_work_when_paused() {
     // Getters should still work
     let campaign = client.get_campaign(&camp_id);
     assert_eq!(campaign.id, camp_id);
-    assert_eq!(client.is_paused(), true);
+    assert!(client.is_paused());
 }
 
 #[test]
@@ -682,9 +682,9 @@ fn test_contribute_and_event_emission() {
 
     // Register a mock token for testing
     let admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract(admin.clone());
-    let token_client = soroban_sdk::token::Client::new(&env, &token_id);
-    let token_admin_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone());
+    let token_client = soroban_sdk::token::Client::new(&env, &token_id.address());
+    let token_admin_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id.address());
 
     let contract_id = env.register(CrowdfundingContract, ());
     let client = CrowdfundingContractClient::new(&env, &contract_id);
@@ -714,7 +714,7 @@ fn test_contribute_and_event_emission() {
 
     // Contribute
     let amount = 1000i128;
-    client.contribute(&pool_id, &contributor, &token_id, &amount, &false);
+    client.contribute(&pool_id, &contributor, &token_id.address(), &amount, &false);
 
     // Verify balance transfer
     assert_eq!(token_client.balance(&contributor), 4000i128);
@@ -732,9 +732,9 @@ fn test_emergency_withdraw() {
 
     // Register a mock token
     let token_admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract(token_admin.clone());
-    let token_client = soroban_sdk::token::Client::new(&env, &token_id);
-    let token_admin_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone());
+    let token_client = soroban_sdk::token::Client::new(&env, &token_id.address());
+    let token_admin_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id.address());
 
     let contract_id = env.register(CrowdfundingContract, ());
     let client = CrowdfundingContractClient::new(&env, &contract_id);
@@ -748,7 +748,7 @@ fn test_emergency_withdraw() {
     assert_eq!(token_client.balance(&contract_id), 5000i128);
 
     // Request emergency withdraw
-    client.request_emergency_withdraw(&token_id, &5000i128);
+    client.request_emergency_withdraw(&token_id.address(), &5000i128);
 
     // Check request state implicitly by trying to execute too early
     let result = client.try_execute_emergency_withdraw();
@@ -759,7 +759,8 @@ fn test_emergency_withdraw() {
 
     // Fast forward 25 hours (25 * 3600 = 90000)
     let current_time = env.ledger().timestamp();
-    env.ledger().with_mut(|li| li.timestamp = current_time + 90000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = current_time + 90000);
 
     // Execute
     client.execute_emergency_withdraw();
