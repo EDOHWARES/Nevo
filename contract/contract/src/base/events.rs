@@ -53,9 +53,9 @@ pub fn contribution(
     timestamp: u64,
     is_private: bool,
 ) {
-    let topics = (Symbol::new(env, "contribution"), pool_id);
+    let topics = (Symbol::new(env, "contribution"), pool_id, contributor);
     env.events()
-        .publish(topics, (contributor, asset, amount, timestamp, is_private));
+        .publish(topics, (asset, amount, timestamp, is_private));
 }
 
 pub fn emergency_withdraw_requested(
