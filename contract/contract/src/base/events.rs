@@ -105,3 +105,8 @@ pub fn refund(
     let topics = (Symbol::new(env, "refund"), pool_id, contributor);
     env.events().publish(topics, (asset, amount, timestamp));
 }
+
+pub fn pool_closed(env: &Env, pool_id: u64, closed_by: Address, timestamp: u64) {
+    let topics = (Symbol::new(env, "pool_closed"), pool_id, closed_by);
+    env.events().publish(topics, timestamp);
+}

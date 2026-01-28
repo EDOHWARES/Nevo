@@ -84,6 +84,7 @@ pub enum PoolState {
     Completed = 2,
     Cancelled = 3,
     Disbursed = 4,
+    Closed = 5,
 }
 
 #[contracttype]
@@ -232,6 +233,7 @@ mod tests {
         assert_eq!(PoolState::Completed as u32, 2);
         assert_eq!(PoolState::Cancelled as u32, 3);
         assert_eq!(PoolState::Disbursed as u32, 4);
+        assert_eq!(PoolState::Closed as u32, 5);
     }
 
     #[test]

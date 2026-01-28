@@ -919,4 +919,75 @@ impl CrowdfundingTrait for CrowdfundingContract {
 
         Ok(())
     }
+
+    fn close_pool(env: Env, pool_id: u64, caller: Address) -> Result<(), CrowdfundingError> {
+        caller.require_auth();
+
+        // Validate pool exists
+        let pool_key = StorageKey::Pool(pool_id);
+        let _pool: PoolConfig = env
+            .storage()
+            .instance()
+            .get(&pool_key)
+            .ok_or(CrowdfundingError::PoolNotFound)?;
+
+        // Get current pool state
+        let state_key = StorageKey::PoolState(pool_id);
+        let current_state: PoolState = env
+            .storage()
+            .instance()
+            .get(&state_key)
+            .unwrap_or(PoolState::Active);
+
+        // Check if pool is already closed
+        if current_state == PoolState::Closed {
+            return Err(CrowdfundingError::PoolAlreadyClosed);
+        }
+
+        // Only allow closing if pool is in Disbursed or Cancelled state
+        if current_state != PoolState::Disbursed && current_state != PoolState::Cancelled {
+            return Err(CrowdfundingError::PoolNotDisbursedOrRefunded);
+        }
+
+        // Verify caller is admin or pool creator
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&StorageKey::Admin)
+            .ok_or(CrowdfundingError::NotInitialized)?;
+
+        // For now, we'll check if there's a creator stored separately
+        // Since PoolConfig doesn't have creator field, we'll allow admin only
+        // In a real implementation, you might want to add creator to PoolConfig or store it separately
+        if caller != admin {
+            return Err(CrowdfundingError::Unauthorized);
+        }
+
+        // Update state to Closed
+        env.storage().instance().set(&state_key, &PoolState::Closed);
+
+        // Emit pool_closed event
+        let now = env.ledger().timestamp();
+        events::pool_closed(&env, pool_id, caller.clone(), now);
+
+        Ok(())
+    }
+
+    fn is_closed(env: Env, pool_id: u64) -> Result<bool, CrowdfundingError> {
+        // Validate pool exists
+        let pool_key = StorageKey::Pool(pool_id);
+        if !env.storage().instance().has(&pool_key) {
+            return Err(CrowdfundingError::PoolNotFound);
+        }
+
+        // Get current pool state
+        let state_key = StorageKey::PoolState(pool_id);
+        let current_state: PoolState = env
+            .storage()
+            .instance()
+            .get(&state_key)
+            .unwrap_or(PoolState::Active);
+
+        Ok(current_state == PoolState::Closed)
+    }
 }
