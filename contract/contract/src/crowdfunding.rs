@@ -5,9 +5,10 @@ use crate::base::{
     errors::CrowdfundingError,
     events,
     types::{
-        CampaignDetails, CampaignMetrics, Contribution, EmergencyWithdrawal, MultiSigConfig,
-        PoolConfig, PoolContribution, PoolMetadata, PoolMetrics, PoolState, StorageKey,
-        MAX_DESCRIPTION_LENGTH, MAX_HASH_LENGTH, MAX_URL_LENGTH,
+        CampaignDetails, CampaignLifecycleStatus, CampaignMetrics, Contribution,
+        EmergencyWithdrawal, MultiSigConfig, PoolConfig, PoolContribution, PoolMetadata,
+        PoolMetrics, PoolState, StorageKey, MAX_DESCRIPTION_LENGTH, MAX_HASH_LENGTH,
+        MAX_URL_LENGTH,
     },
 };
 use crate::interfaces::crowdfunding::CrowdfundingTrait;
@@ -197,6 +198,32 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .unwrap_or(Vec::new(&env))
     }
 
+    fn get_active_campaign_count(env: Env) -> u32 {
+        let all_campaigns: Vec<BytesN<32>> = env
+            .storage()
+            .instance()
+            .get(&StorageKey::AllCampaigns)
+            .unwrap_or(Vec::new(&env));
+
+        let now = env.ledger().timestamp();
+        let mut count: u32 = 0;
+
+        for id in all_campaigns.iter() {
+            let campaign_key = (id,);
+            if let Some(campaign) = env
+                .storage()
+                .instance()
+                .get::<_, CampaignDetails>(&campaign_key)
+            {
+                if campaign.deadline > now {
+                    count += 1;
+                }
+            }
+        }
+
+        count
+    }
+
     fn get_donor_count(env: Env, campaign_id: BytesN<32>) -> Result<u32, CrowdfundingError> {
         let campaign_key = (campaign_id.clone(),);
         if !env.storage().instance().has(&campaign_key) {
@@ -262,6 +289,27 @@ impl CrowdfundingTrait for CrowdfundingContract {
         let campaign = Self::get_campaign(env.clone(), campaign_id.clone())?;
         let balance = Self::get_campaign_balance(env, campaign_id)?;
         Ok(balance >= campaign.goal)
+    }
+
+    fn get_campaign_status(
+        env: Env,
+        campaign_id: BytesN<32>,
+    ) -> Result<CampaignLifecycleStatus, CrowdfundingError> {
+        let campaign = Self::get_campaign(env.clone(), campaign_id.clone())?;
+        let total_raised = Self::get_campaign_balance(env.clone(), campaign_id.clone())?;
+        let current_time = env.ledger().timestamp();
+        let cancellation_key = StorageKey::CampaignCancelled(campaign_id.clone());
+        let is_cancelled = env.storage().instance().has(&cancellation_key);
+
+        let status = CampaignLifecycleStatus::get_status(
+            total_raised,
+            campaign.goal,
+            campaign.deadline,
+            current_time,
+            is_cancelled,
+        );
+
+        Ok(status)
     }
 
     fn donate(
@@ -1128,5 +1176,30 @@ impl CrowdfundingTrait for CrowdfundingContract {
         events::platform_fees_withdrawn(&env, admin, amount);
 
         Ok(())
+    }
+
+    fn set_emergency_contact(env: Env, contact: Address) -> Result<(), CrowdfundingError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&StorageKey::Admin)
+            .ok_or(CrowdfundingError::NotInitialized)?;
+
+        admin.require_auth();
+
+        let key = StorageKey::EmergencyContact;
+        env.storage().instance().set(&key, &contact);
+
+        events::emergency_contact_updated(&env, admin.clone(), contact);
+
+        Ok(())
+    }
+
+    fn get_emergency_contact(env: Env) -> Result<Address, CrowdfundingError> {
+        let key = StorageKey::EmergencyContact;
+        env.storage()
+            .instance()
+            .get(&key)
+            .ok_or(CrowdfundingError::NotInitialized)
     }
 }
