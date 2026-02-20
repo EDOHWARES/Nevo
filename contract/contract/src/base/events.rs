@@ -110,3 +110,8 @@ pub fn pool_closed(env: &Env, pool_id: u64, closed_by: Address, timestamp: u64) 
     let topics = (Symbol::new(env, "pool_closed"), pool_id, closed_by);
     env.events().publish(topics, timestamp);
 }
+
+pub fn platform_fees_withdrawn(env: &Env, admin: Address, amount: i128) {
+    let topics = (Symbol::new(env, "platform_fees_withdrawn"), admin);
+    env.events().publish(topics, amount);
+}

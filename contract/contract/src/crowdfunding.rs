@@ -63,6 +63,18 @@ impl CrowdfundingTrait for CrowdfundingContract {
             }
 
             token_client.transfer(&creator, env.current_contract_address(), &creation_fee);
+
+            // Track platform fees
+            let platform_fees_key = StorageKey::PlatformFees;
+            let current_fees: i128 = env
+                .storage()
+                .instance()
+                .get(&platform_fees_key)
+                .unwrap_or(0);
+            env.storage()
+                .instance()
+                .set(&platform_fees_key, &(current_fees + creation_fee));
+
             events::creation_fee_paid(&env, creator.clone(), creation_fee);
         }
 
@@ -1024,5 +1036,57 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .instance()
             .get(&StorageKey::VerifiedCause(cause))
             .unwrap_or(false)
+    }
+
+    fn withdraw_platform_fees(
+        env: Env,
+        admin: Address,
+        amount: i128,
+    ) -> Result<(), CrowdfundingError> {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&StorageKey::Admin)
+            .ok_or(CrowdfundingError::NotInitialized)?;
+
+        if admin != stored_admin {
+            return Err(CrowdfundingError::Unauthorized);
+        }
+
+        admin.require_auth();
+
+        if amount <= 0 {
+            return Err(CrowdfundingError::InvalidAmount);
+        }
+
+        let platform_fees_key = StorageKey::PlatformFees;
+        let current_fees: i128 = env
+            .storage()
+            .instance()
+            .get(&platform_fees_key)
+            .unwrap_or(0);
+
+        if amount > current_fees {
+            return Err(CrowdfundingError::InsufficientFees);
+        }
+
+        let token_key = StorageKey::CrowdfundingToken;
+        let token_address: Address = env
+            .storage()
+            .instance()
+            .get(&token_key)
+            .ok_or(CrowdfundingError::NotInitialized)?;
+
+        use soroban_sdk::token;
+        let token_client = token::Client::new(&env, &token_address);
+        token_client.transfer(&env.current_contract_address(), &admin, &amount);
+
+        env.storage()
+            .instance()
+            .set(&platform_fees_key, &(current_fees - amount));
+
+        events::platform_fees_withdrawn(&env, admin, amount);
+
+        Ok(())
     }
 }
