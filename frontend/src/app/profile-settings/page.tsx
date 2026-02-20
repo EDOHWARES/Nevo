@@ -30,7 +30,7 @@ export default function ProfileSettingsPage() {
         const stored = JSON.parse(storedStr);
         setProfile(stored);
         setFormData(stored);
-      } catch (e) {
+      } catch {
         setFormData(defaultProfile);
       }
     } else {
@@ -77,6 +77,7 @@ export default function ProfileSettingsPage() {
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-800 border-4 border-slate-700 flex items-center justify-center relative shadow-inner">
                     {formData.avatarUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={formData.avatarUrl}
                         alt="Avatar"
