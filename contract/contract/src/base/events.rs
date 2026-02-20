@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use soroban_sdk::{Address, BytesN, Env, String, Symbol};
 
 use crate::base::types::PoolState;
@@ -52,7 +53,23 @@ pub fn contribution(
     timestamp: u64,
     is_private: bool,
 ) {
-    let topics = (Symbol::new(env, "contribution"), pool_id);
+    let topics = (Symbol::new(env, "contribution"), pool_id, contributor);
     env.events()
-        .publish(topics, (contributor, asset, amount, timestamp, is_private));
+        .publish(topics, (asset, amount, timestamp, is_private));
+}
+
+pub fn emergency_withdraw_requested(
+    env: &Env,
+    admin: Address,
+    token: Address,
+    amount: i128,
+    unlock_time: u64,
+) {
+    let topics = (Symbol::new(env, "emergency_withdraw_requested"), admin);
+    env.events().publish(topics, (token, amount, unlock_time));
+}
+
+pub fn emergency_withdraw_executed(env: &Env, admin: Address, token: Address, amount: i128) {
+    let topics = (Symbol::new(env, "emergency_withdraw_executed"), admin);
+    env.events().publish(topics, (token, amount));
 }

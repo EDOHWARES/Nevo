@@ -31,4 +31,10 @@ pub enum CrowdfundingError {
     SignerNotFound = 25,
     CannotRemoveLastSigner = 26,
     InvalidSignerCount = 27,
+    NotInitialized = 28,
+    Unauthorized = 29,
+    InvalidMetadata = 30,
+    EmergencyWithdrawalAlreadyRequested = 31,
+    EmergencyWithdrawalNotRequested = 32,
+    EmergencyWithdrawalPeriodNotPassed = 33,
 }

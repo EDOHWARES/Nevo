@@ -1,48 +1,36 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
+// import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
+// import "./globals.css";
+// import { Anton } from "next/font/google";
 import "./globals.css";
-import { Anton } from "next/font/google";
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// });
 
-const anton = Anton({
-  weight: ["400"], // Anton only has one weight
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-anton",
-});
+// const anton = Anton({
+//   weight: ["400"], // Anton only has one weight
+//   subsets: ["latin"],
+//   display: "swap",
+//   variable: "--font-anton",
+// });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "900"], // Choose the weights you need
-  display: "swap",
-  variable: "--font-dmsans",
-});
+// const dmSans = DM_Sans({
+//   subsets: ["latin"],
+//   weight: ["400", "500", "700", "900"], // Choose the weights you need
+//   display: "swap",
+//   variable: "--font-dmsans",
+// });
 
 export const metadata: Metadata = {
-  title: "Nevo - Secure Donation Pools on Stellar | Transparent Fundraising",
-  description:
-    "Create transparent, secure donation pools on Stellar blockchain. Earn DeFi yield, minimize costs, and track every donation in real-time. Start fundraising today.",
-  keywords: [
-    "donation pools",
-    "blockchain",
-    "Stellar",
-    "XLM",
-    "USDC",
-    "DeFi",
-    "fundraising",
-    "transparent",
-    "secure",
-  ],
+
   authors: [{ name: "Nevo" }],
   openGraph: {
     type: "website",
@@ -105,7 +93,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`bg-no-repeat bg-fixed bg h-full bg-cover py-7 ${dmSans.variable} ${anton.variable} ${geistSans.variable} ${geistMono.variable} antialiased font-dmsans`}
+        className={`bg-no-repeat bg-fixed bg h-full bg-cover py-7 antialiased font-dmsans`}
         suppressHydrationWarning={true}
       >
         <main className="mt-28 ">{children}</main>
