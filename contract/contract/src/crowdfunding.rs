@@ -1920,4 +1920,19 @@ impl SecondCrowdfundingTrait for CrowdfundingContract {
         let _ = env; // env available for future use
         Ok(())
     }
+
+    fn create_event(
+        env: Env,
+        _id: BytesN<32>,
+        title: String,
+        _creator: Address,
+        _ticket_price: i128,
+        _max_attendees: u32,
+        _deadline: u64,
+        _token: Address,
+    ) -> Result<(), SecondCrowdfundingError> {
+        Self::validate_string_length(&title)?;
+        let _ = env;
+        Ok(())
+    }
 }

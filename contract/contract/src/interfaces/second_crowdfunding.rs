@@ -26,4 +26,16 @@ pub trait SecondCrowdfundingTrait {
         deadline: u64,
         token_address: Address,
     ) -> Result<(), SecondCrowdfundingError>;
+
+    #[allow(clippy::too_many_arguments)]
+    fn create_event(
+        env: Env,
+        id: BytesN<32>,
+        title: String,
+        creator: Address,
+        ticket_price: i128,
+        max_attendees: u32,
+        deadline: u64,
+        token: Address,
+    ) -> Result<(), SecondCrowdfundingError>;
 }
