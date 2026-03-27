@@ -1,3 +1,4 @@
+mod all_events_test;
 // mod blacklist_test; // Features not yet implemented
 mod batch_claim_test;
 mod buy_ticket_test;

@@ -1888,6 +1888,20 @@ impl CrowdfundingTrait for CrowdfundingContract {
         env.deployer().update_current_contract_wasm(new_wasm_hash);
         Ok(())
     }
+
+    fn get_all_events_count(env: Env) -> u64 {
+        env.storage()
+            .persistent()
+            .get::<_, u64>(&StorageKey::AllEventsCount)
+            .unwrap_or(0)
+    }
+
+    fn get_all_events(env: Env) -> Vec<crate::base::types::EventRecord> {
+        env.storage()
+            .persistent()
+            .get::<_, Vec<crate::base::types::EventRecord>>(&StorageKey::AllEvents)
+            .unwrap_or_else(|| Vec::new(&env))
+    }
 }
 
 impl CrowdfundingContract {
