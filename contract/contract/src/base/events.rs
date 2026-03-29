@@ -332,6 +332,19 @@ pub fn platform_fee_bps_set(env: &Env, admin: Address, fee_bps: u32) {
     env.events().publish(topics, fee_bps);
 }
 
+/// @notice Emitted when the platform fee is changed, capturing both the previous
+///         and the new value for full auditability.
+/// @dev Admin address is the indexed topic; the (old_fee_bps, new_fee_bps) tuple
+///      is stored in the event data payload. Off-chain indexers can use this event
+///      to track the complete fee history without querying historical state.
+/// @param admin The address of the administrator who performed the update.
+/// @param old_fee_bps The platform fee in basis points that was in effect before the update.
+/// @param new_fee_bps The platform fee in basis points that is now in effect after the update.
+pub fn platform_fee_updated(env: &Env, admin: Address, old_fee_bps: u32, new_fee_bps: u32) {
+    let topics = (Symbol::new(env, "platform_fee_updated"), admin);
+    env.events().publish(topics, (old_fee_bps, new_fee_bps));
+}
+
 /// @notice Emitted when a ticket is sold for a ticketed event pool.
 /// @dev Pool ID and buyer address are indexed topics. Ticket price, the portion
 ///      allocated to the event, and the platform fee portion are stored in the

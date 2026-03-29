@@ -243,10 +243,17 @@ impl CrowdfundingTrait for CrowdfundingContract {
             return Err(CrowdfundingError::InvalidFee);
         }
 
+        let old_fee_bps: u32 = env
+            .storage()
+            .instance()
+            .get(&StorageKey::PlatformFeeBps)
+            .unwrap_or(0);
+
         env.storage()
             .instance()
             .set(&StorageKey::PlatformFeeBps, &fee_bps);
-        events::platform_fee_bps_set(&env, admin, fee_bps);
+        events::platform_fee_bps_set(&env, admin.clone(), fee_bps);
+        events::platform_fee_updated(&env, admin, old_fee_bps, fee_bps);
         Ok(())
     }
 
