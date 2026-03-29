@@ -122,6 +122,12 @@ pub trait CrowdfundingTrait {
 
     fn get_creation_fee(env: Env) -> Result<i128, CrowdfundingError>;
 
+    fn holds_ticket(
+        env: Env,
+        event_id: BytesN<32>,
+        user: Address,
+    ) -> Result<bool, CrowdfundingError>;
+}
     fn get_global_raised_total(env: Env) -> i128;
 
     fn get_top_contributor_for_campaign(

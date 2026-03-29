@@ -230,7 +230,18 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .get(&StorageKey::CreationFee)
             .unwrap_or(0))
     }
+ feat/add-holds-ticket-function
+    fn holds_ticket(
+        env: Env,
+        event_id: BytesN<32>,
+        user: Address,
+    ) -> Result<bool, CrowdfundingError> {
+        // Validate campaign exists (which is our event in this context)
+        Self::get_campaign(env.clone(), event_id.clone())?;
 
+        let donor_key = StorageKey::CampaignDonor(event_id, user);
+        Ok(env.storage().instance().get(&donor_key).unwrap_or(false))
+=======
     fn set_platform_fee_bps(env: Env, fee_bps: u32) -> Result<(), CrowdfundingError> {
         let admin: Address = env
             .storage()
@@ -357,6 +368,7 @@ impl CrowdfundingTrait for CrowdfundingContract {
 
         events::ticket_sold(&env, pool_id, buyer, price, event_amount, fee_amount);
         Ok((event_amount, fee_amount))
+ main
     }
 
     fn get_event_metrics(env: Env, pool_id: u64) -> Result<EventMetrics, CrowdfundingError> {
