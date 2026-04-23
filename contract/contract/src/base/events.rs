@@ -228,3 +228,8 @@ pub fn application_rejected(env: &Env, admin: Address, cause: Address) {
     let topics = (symbol_short!("AppRej"), admin);
     env.events().publish(topics, cause);
 }
+
+pub fn application_submitted(env: &Env, pool_id: u64, student: Address, requested_amount: i128) {
+    let topics = (symbol_short!("AppSub"), pool_id, student);
+    env.events().publish(topics, requested_amount);
+}

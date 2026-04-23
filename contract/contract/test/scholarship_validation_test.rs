@@ -70,6 +70,45 @@ fn test_apply_for_scholarship_success() {
 }
 
 #[test]
+fn test_apply_for_scholarship_emits_app_sub_event() {
+    use soroban_sdk::{symbol_short, FromVal, Symbol};
+
+    let env = Env::default();
+    let (client, _, token) = setup(&env);
+
+    let creator = Address::generate(&env);
+    let validator = Address::generate(&env);
+    let pool_id = create_pool_with_validator(&client, &env, &creator, &validator, &token);
+
+    let student = Address::generate(&env);
+    client.apply_for_scholarship(&pool_id, &student);
+
+    // Verify AppSub event was emitted
+    let app_sub = symbol_short!("AppSub");
+    let found = env.events().all().iter().any(|(_, topics, data)| {
+        if topics.is_empty() {
+            return false;
+        }
+        let event_symbol = Symbol::from_val(&env, &topics.get(0).unwrap());
+        if event_symbol != app_sub {
+            return false;
+        }
+        // Verify topics contain pool_id and student
+        if topics.len() < 3 {
+            return false;
+        }
+        // Verify data contains the target_amount (1_000_000)
+        if let Ok(amount) = i128::try_from_val(&env, data) {
+            amount == 1_000_000
+        } else {
+            false
+        }
+    });
+
+    assert!(found, "AppSub event must be emitted with pool_id, student, and target_amount");
+}
+
+#[test]
 fn test_apply_for_scholarship_pool_not_found() {
     let env = Env::default();
     let (client, _, _) = setup(&env);
