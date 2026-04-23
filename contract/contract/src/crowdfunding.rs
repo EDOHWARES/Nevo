@@ -1703,7 +1703,8 @@ impl CrowdfundingTrait for CrowdfundingContract {
 
         env.storage()
             .instance()
-            .set(&StorageKey::VerifiedCause(cause), &true);
+            .set(&StorageKey::VerifiedCause(cause.clone()), &true);
+        events::application_approved(&env, admin, cause);
         Ok(())
     }
 
@@ -1712,6 +1713,21 @@ impl CrowdfundingTrait for CrowdfundingContract {
             .instance()
             .get(&StorageKey::VerifiedCause(cause))
             .unwrap_or(false)
+    }
+
+    fn reject_cause(env: Env, cause: Address) -> Result<(), CrowdfundingError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&StorageKey::Admin)
+            .ok_or(CrowdfundingError::NotInitialized)?;
+        admin.require_auth();
+
+        env.storage()
+            .instance()
+            .remove(&StorageKey::VerifiedCause(cause.clone()));
+        events::application_rejected(&env, admin, cause);
+        Ok(())
     }
 
     fn withdraw_platform_fees(

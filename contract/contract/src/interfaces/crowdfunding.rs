@@ -172,6 +172,8 @@ pub trait CrowdfundingTrait {
 
     fn is_cause_verified(env: Env, cause: Address) -> bool;
 
+    fn reject_cause(env: Env, cause: Address) -> Result<(), CrowdfundingError>;
+
     fn withdraw_platform_fees(env: Env, to: Address, amount: i128)
         -> Result<(), CrowdfundingError>;
 
