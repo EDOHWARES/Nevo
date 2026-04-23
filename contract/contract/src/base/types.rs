@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, BytesN, String, Vec};
+use soroban_sdk::{contracttype, Address, Bytes, BytesN, String, Vec};
 
 /// Documentation for this item.
 #[allow(missing_docs)]
@@ -72,6 +72,27 @@ pub struct PoolConfig {
     pub created_at: u64,
     /// The token address.
     pub token_address: Address,
+    /// The address authorized to approve or reject scholarship applications for this pool.
+    pub validator: Address,
+}
+
+/// Status of a scholarship application.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum ApplicationStatus {
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2,
+}
+
+/// A scholarship application submitted to a pool.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScholarshipApplication {
+    pub pool_id: u64,
+    pub applicant: Address,
+    pub status: ApplicationStatus,
 }
 
 /// Documentation for this item.
@@ -89,6 +110,15 @@ pub struct PoolMetadata {
 }
 
 /// The const MAX DESCRIPTION LENGTH.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PoolDetails {
+    pub config: PoolConfig,
+    pub state: PoolState,
+    pub metrics: PoolMetrics,
+    pub metadata: PoolMetadata,
+}
+
 pub const MAX_DESCRIPTION_LENGTH: u32 = 500;
 /// The const MAX URL LENGTH.
 pub const MAX_URL_LENGTH: u32 = 200;
@@ -417,6 +447,27 @@ pub struct PoolContribution {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 /// Defines the possible states or errors for storagekey.
+pub enum ApplicationStatus {
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ApplicationDetails {
+    pub pool_id: u64,
+    pub applicant: Address,
+    pub credentials: Bytes,
+    pub requested_amount: i128,
+    pub submitted_at: u64,
+    pub status: ApplicationStatus,
+    pub reviewer: Option<Address>,
+    pub review_note: Option<String>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum StorageKey {
     /// Pool.
     Pool(u64),
@@ -436,6 +487,7 @@ pub enum StorageKey {
     PoolContribution(u64, Address),
     /// PoolContributors.
     PoolContributors(u64),
+    Application(u64, Address),
 
     /// NextPoolId.
     NextPoolId,
@@ -495,9 +547,15 @@ pub enum StorageKey {
     // Event details keyed by event id
     /// Event.
     Event(BytesN<32>),
+    // track if a pool has been claimed
+    PoolClaimed(u64),
     // Per-event metrics (tickets sold, etc.)
     /// EventMetrics.
     EventMetrics(BytesN<32>),
+    // Scholarship application keyed by (pool_id, applicant)
+    ScholarshipApplication(u64, Address),
+    // Locked token balance deposited by the sponsor at pool creation
+    PoolBalance(u64),
 }
 
 #[cfg(test)]
@@ -509,6 +567,7 @@ mod tests {
     fn pool_config_validation_success() {
         let env = Env::default();
         let token = Address::generate(&env);
+        let validator = Address::generate(&env);
         let cfg = PoolConfig {
             name: String::from_str(&env, "Education Fund"),
             description: String::from_str(&env, "Fund for student education materials"),
@@ -518,6 +577,7 @@ mod tests {
             duration: 30 * 24 * 60 * 60,
             created_at: 1,
             token_address: token,
+            validator,
         };
 
         cfg.validate();
@@ -528,6 +588,7 @@ mod tests {
     fn pool_config_invalid_target_amount_panics() {
         let env = Env::default();
         let token = Address::generate(&env);
+        let validator = Address::generate(&env);
         let cfg = PoolConfig {
             name: String::from_str(&env, "Invalid Target"),
             description: String::from_str(&env, "Description"),
@@ -537,6 +598,7 @@ mod tests {
             duration: 30 * 24 * 60 * 60,
             created_at: 1,
             token_address: token,
+            validator,
         };
 
         cfg.validate();
@@ -687,5 +749,37 @@ mod tests {
         assert_eq!(event.deadline, 1_700_000_000);
         assert_eq!(event.creator, creator);
         assert_eq!(event.token, token);
+    }
+
+    #[test]
+    fn pool_details_instantiation() {
+        let env = Env::default();
+        let creator = Address::generate(&env);
+        let token = Address::generate(&env);
+        let config = PoolConfig {
+            name: String::from_str(&env, "Test Pool"),
+            description: String::from_str(&env, "A test scholarship pool"),
+            target_amount: 1000,
+            min_contribution: 10,
+            is_private: false,
+            duration: 86400,
+            created_at: 1234567890,
+            token_address: token.clone(),
+        };
+        let metadata = PoolMetadata {
+            description: String::from_str(&env, "Metadata description"),
+            external_url: String::from_str(&env, "https://example.com"),
+            image_hash: String::from_str(&env, "hash123"),
+        };
+        let details = PoolDetails {
+            config: config.clone(),
+            state: PoolState::Active,
+            metrics: PoolMetrics::new(),
+            metadata: metadata.clone(),
+        };
+        assert_eq!(details.config, config);
+        assert_eq!(details.state, PoolState::Active);
+        assert_eq!(details.metrics.total_raised, 0);
+        assert_eq!(details.metadata, metadata);
     }
 }
