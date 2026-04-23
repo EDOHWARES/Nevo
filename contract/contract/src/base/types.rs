@@ -333,6 +333,8 @@ pub enum StorageKey {
     UserTicket(u64, Address),
     // Event details keyed by event id
     Event(BytesN<32>),
+    // track if a pool has been claimed
+    PoolClaimed(u64),
     // Per-event metrics (tickets sold, etc.)
     EventMetrics(BytesN<32>),
 }
