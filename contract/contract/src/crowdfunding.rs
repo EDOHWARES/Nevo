@@ -1133,6 +1133,57 @@ impl CrowdfundingTrait for CrowdfundingContract {
         }
     }
 
+    fn update_pool_metadata_hash(
+        env: Env,
+        pool_id: u64,
+        caller: Address,
+        new_hash: String,
+    ) -> Result<(), CrowdfundingError> {
+        if Self::is_paused(env.clone()) {
+            return Err(CrowdfundingError::ContractPaused);
+        }
+
+        let pool_key = StorageKey::Pool(pool_id);
+        if !env.storage().instance().has(&pool_key) {
+            return Err(CrowdfundingError::PoolNotFound);
+        }
+
+        let creator_key = StorageKey::PoolCreator(pool_id);
+        let creator: Address = env
+            .storage()
+            .instance()
+            .get(&creator_key)
+            .ok_or(CrowdfundingError::Unauthorized)?;
+
+        if caller != creator {
+            return Err(CrowdfundingError::Unauthorized);
+        }
+        caller.require_auth();
+
+        if new_hash.len() > MAX_HASH_LENGTH {
+            return Err(CrowdfundingError::InvalidMetadata);
+        }
+
+        let metadata_key = StorageKey::PoolMetadata(pool_id);
+        let mut metadata: PoolMetadata = env
+            .storage()
+            .persistent()
+            .get(&metadata_key)
+            .unwrap_or(PoolMetadata {
+                description: String::from_str(&env, ""),
+                external_url: String::from_str(&env, ""),
+                image_hash: String::from_str(&env, ""),
+            });
+
+        metadata.image_hash = new_hash.clone();
+        env.storage().persistent().set(&metadata_key, &metadata);
+
+        events::pool_metadata_updated(&env, pool_id, caller.clone(), new_hash.clone());
+        events::pool_metadata_updated_v2(&env, pool_id, caller, new_hash);
+
+        Ok(())
+    }
+
     fn update_pool_state(
         env: Env,
         pool_id: u64,
@@ -1166,8 +1217,11 @@ impl CrowdfundingTrait for CrowdfundingContract {
         // Update state
         env.storage().instance().set(&state_key, &new_state);
 
-        // Emit event
-        events::pool_state_updated(&env, pool_id, new_state);
+        // Emit events
+        events::pool_state_updated(&env, pool_id, new_state.clone());
+        if new_state == PoolState::Paused {
+            events::pool_paused(&env, pool_id);
+        }
 
         Ok(())
     }

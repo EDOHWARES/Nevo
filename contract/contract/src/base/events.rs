@@ -1,5 +1,5 @@
 #![allow(deprecated)]
-use soroban_sdk::{Address, BytesN, Env, String, Symbol};
+use soroban_sdk::{symbol_short, Address, BytesN, Env, String, Symbol};
 
 use crate::base::types::PoolState;
 
@@ -27,8 +27,23 @@ pub fn pool_created(
     creator: Address,
     details: (String, String, i128, i128, u64),
 ) {
-    let topics = (Symbol::new(env, "pool_created"), pool_id, creator);
+    let topics = (symbol_short!("PoolCre"), pool_id, creator);
     env.events().publish(topics, details);
+}
+
+pub fn pool_metadata_updated_v2(
+    env: &Env,
+    pool_id: u64,
+    updater: Address,
+    new_metadata_hash: String,
+) {
+    let topics = (symbol_short!("PoolUpd"), pool_id, updater);
+    env.events().publish(topics, new_metadata_hash);
+}
+
+pub fn pool_paused(env: &Env, pool_id: u64) {
+    let topics = (symbol_short!("PoolPau"), pool_id);
+    env.events().publish(topics, ());
 }
 
 pub fn event_created(
@@ -170,6 +185,7 @@ pub fn pool_metadata_updated(env: &Env, pool_id: u64, updater: Address, new_meta
     let topics = (Symbol::new(env, "pool_metadata_updated"), pool_id, updater);
     env.events().publish(topics, new_metadata_hash);
 }
+
 
 pub fn platform_fee_bps_set(env: &Env, admin: Address, fee_bps: u32) {
     let topics = (Symbol::new(env, "platform_fee_bps_set"), admin);

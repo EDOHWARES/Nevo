@@ -108,6 +108,13 @@ pub trait CrowdfundingTrait {
 
     fn get_pool_metadata(env: Env, pool_id: u64) -> (String, String, String);
 
+    fn update_pool_metadata_hash(
+        env: Env,
+        pool_id: u64,
+        caller: Address,
+        new_hash: String,
+    ) -> Result<(), CrowdfundingError>;
+
     fn update_pool_state(
         env: Env,
         pool_id: u64,
