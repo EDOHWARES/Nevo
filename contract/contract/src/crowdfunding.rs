@@ -2,6 +2,8 @@
 use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, String, Vec};
 
 use crate::base::errors::SecondCrowdfundingError;
+#[cfg(test)]
+use crate::base::types::{EventDetails, EventMetrics};
 use crate::base::{
     errors::{CrowdfundingError, SecondCrowdfundingError, ValidationError},
     events,
@@ -20,7 +22,10 @@ use crate::interfaces::crowdfunding::CrowdfundingTrait;
 #[cfg(test)]
 use crate::interfaces::second_crowdfunding::SecondCrowdfundingTrait;
 
+/// Documentation for this item.
+#[allow(missing_docs)]
 #[contract]
+/// Represents a crowdfundingcontract.
 pub struct CrowdfundingContract;
 
 // Internal helper functions
@@ -68,6 +73,8 @@ impl CrowdfundingContract {
     }
 }
 
+/// Documentation for this item.
+#[allow(missing_docs)]
 #[contractimpl]
 #[allow(clippy::too_many_arguments)]
 impl CrowdfundingTrait for CrowdfundingContract {
@@ -906,6 +913,39 @@ impl CrowdfundingTrait for CrowdfundingContract {
         // Validate config
         config.validate();
 
+        // Evaluate and charge creation fee
+        let fee_key = StorageKey::CreationFee;
+        let creation_fee: i128 = env.storage().instance().get(&fee_key).unwrap_or(0);
+
+        if creation_fee > 0 {
+            let token_key = StorageKey::CrowdfundingToken;
+            if !env.storage().instance().has(&token_key) {
+                return Err(CrowdfundingError::NotInitialized);
+            }
+            let token_address: Address = env.storage().instance().get(&token_key).unwrap();
+
+            use soroban_sdk::token;
+            let token_client = token::Client::new(&env, &token_address);
+
+            let balance = token_client.balance(&creator);
+            if balance < creation_fee {
+                return Err(CrowdfundingError::InsufficientBalance);
+            }
+
+            token_client.transfer(&creator, &env.current_contract_address(), &creation_fee);
+
+            // Track platform fees
+            let platform_fees_key = StorageKey::PlatformFees;
+            let current_fees: i128 = env
+                .storage()
+                .instance()
+                .get(&platform_fees_key)
+                .unwrap_or(0);
+            env.storage()
+                .instance()
+                .set(&platform_fees_key, &(current_fees + creation_fee));
+
+            events::creation_fee_paid(&env, creator.clone(), creation_fee);
         // Validate that the provided token matches the platform's accepted token
         let token_key = StorageKey::CrowdfundingToken;
         if !env.storage().instance().has(&token_key) {
