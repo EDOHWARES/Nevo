@@ -70,6 +70,8 @@ pub struct PoolConfig {
     pub duration: u64,
     /// The created at.
     pub created_at: u64,
+    /// The application_deadline.
+    pub application_deadline: u64,
     /// The token address.
     pub token_address: Address,
     /// The address authorized to approve or reject scholarship applications for this pool.
@@ -585,6 +587,7 @@ mod tests {
             is_private: false,
             duration: 30 * 24 * 60 * 60,
             created_at: 1,
+            application_deadline: 1 + (30 * 24 * 60 * 60),
             token_address: token,
             validator,
         };
@@ -606,6 +609,7 @@ mod tests {
             is_private: false,
             duration: 30 * 24 * 60 * 60,
             created_at: 1,
+            application_deadline: 1 + (30 * 24 * 60 * 60),
             token_address: token,
             validator,
         };
@@ -773,7 +777,9 @@ mod tests {
             is_private: false,
             duration: 86400,
             created_at: 1234567890,
+            application_deadline: 1234567890 + 86400,
             token_address: token.clone(),
+            validator: creator.clone(),
         };
         let metadata = PoolMetadata {
             description: String::from_str(&env, "Metadata description"),
