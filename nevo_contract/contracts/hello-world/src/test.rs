@@ -938,3 +938,90 @@ fn test_refund_after_grace_period_succeeds() {
     let contribution = client.get_contribution(&pool_id, &donor);
     assert_eq!(contribution, 0u128);
 }
+
+// ============= STATE VALIDATION GUARD TESTS (#1129, #1130, #1131, #1132) =============
+
+#[test]
+#[should_panic(expected = "Error(Contract, #1)")]
+fn test_request_emergency_withdraw_missing_pool_panics() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.set_admin(&admin);
+    let token = Address::generate(&env);
+
+    client.request_emergency_withdraw(&admin, &999u32, &token, &100_000_000i128);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #6)")]
+fn test_setup_application_milestones_without_application_panics() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let student = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Milestone Pool"),
+        &String::from_str(&env, "Test"),
+        &1_000_000_000u128,
+        &100_000u64,
+    );
+
+    let milestones = Vec::from_array(&env, [Milestone { amount: 1_000_000_000u128 }]);
+    client.setup_application_milestones(&pool_id, &student, &milestones);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #2)")]
+fn test_claim_funds_cancelled_pool_panics() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let student = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Cancelled Pool"),
+        &String::from_str(&env, "Test"),
+        &1_000_000_000u128,
+        &100_000u64,
+    );
+    client.donate(&pool_id, &creator, &500_000_000u128);
+    client.set_application_status(&pool_id, &student, &String::from_str(&env, "Approved"));
+    client.set_pool_state(&pool_id, &PoolState::Cancelled);
+
+    let token = create_token(&env, 500_000_000i128, &contract_id);
+    client.claim_funds(&student, &pool_id, &100_000_000i128, &token);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #15)")]
+fn test_close_pool_twice_panics() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Double Close Pool"),
+        &String::from_str(&env, "Test"),
+        &1_000_000_000u128,
+        &100_000u64,
+    );
+    client.set_pool_state(&pool_id, &PoolState::Disbursed);
+    client.close_pool(&pool_id);
+    assert!(client.get_pool(&pool_id).4);
+
+    client.close_pool(&pool_id);
+}

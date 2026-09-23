@@ -84,6 +84,7 @@ fn test_milestone_sum_overflow_rejected() {
     milestones.push_back(Milestone { amount: u128::MAX });
     milestones.push_back(Milestone { amount: 1u128 });
 
+    client.apply_to_pool(&pool_id, &student, &String::from_str(&env, "Application"));
     client.setup_application_milestones(&pool_id, &student, &milestones);
 }
 

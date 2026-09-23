@@ -730,6 +730,7 @@ fn test_setup_application_milestones_empty_panics() {
         &100_000u64,
     );
 
+    client.apply_to_pool(&pool_id, &student, &String::from_str(&env, "Application"));
     client.setup_application_milestones(&pool_id, &student, &Vec::new(&env));
 }
 
@@ -756,6 +757,7 @@ fn test_setup_application_milestones_total_mismatch_panics() {
         &env,
         [Milestone { amount: 100_000_000u128 }, Milestone { amount: 200_000_000u128 }],
     );
+    client.apply_to_pool(&pool_id, &student, &String::from_str(&env, "Application"));
     client.setup_application_milestones(&pool_id, &student, &milestones);
 }
 
@@ -782,6 +784,7 @@ fn test_setup_application_milestones_overflow_panics() {
         &env,
         [Milestone { amount: u128::MAX }, Milestone { amount: 1u128 }],
     );
+    client.apply_to_pool(&pool_id, &student, &String::from_str(&env, "Application"));
     client.setup_application_milestones(&pool_id, &student, &milestones);
 }
 
@@ -807,6 +810,7 @@ fn test_setup_and_get_milestones_round_trip() {
         &env,
         [Milestone { amount: 400_000_000u128 }, Milestone { amount: 600_000_000u128 }],
     );
+    client.apply_to_pool(&pool_id, &student, &String::from_str(&env, "Application"));
     client.setup_application_milestones(&pool_id, &student, &milestones);
 
     let stored = client.get_milestones(&pool_id, &student);
