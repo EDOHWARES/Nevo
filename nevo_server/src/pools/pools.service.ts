@@ -70,15 +70,11 @@ export class PoolsService {
     const queryBuilder = this.poolRepo.createQueryBuilder('pool');
 
     if (query.category) {
-      queryBuilder.andWhere('LOWER(pool.category) = LOWER(:category)', {
-        category: query.category,
-      });
+      queryBuilder.andWhere('LOWER(pool.category) = LOWER(:category)', { category: query.category });
     }
 
     if (query.status) {
-      queryBuilder.andWhere('pool.status = :status', {
-        status: query.status,
-      });
+      queryBuilder.andWhere('pool.status = :status', { status: query.status });
     }
 
     if (query.search) {
@@ -89,15 +85,8 @@ export class PoolsService {
     }
 
     queryBuilder.orderBy('pool.createdAt', 'DESC').skip(skip).take(limit);
-
     const [data, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-    };
+    return { data, total, page, limit };
   }
 
   async create(dto: CreatePoolDto): Promise<Pool> {
