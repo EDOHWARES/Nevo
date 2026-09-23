@@ -123,6 +123,8 @@ pub enum ContractError {
     NoContributionToRefund = 13,
     /// School address has not been registered by an admin.
     SchoolNotRegistered = 14,
+    /// Pool has already been closed and cannot be closed again.
+    PoolAlreadyClosed = 15,
 }
 
 // Helper functions for timestamp/deadline edge-case tests
@@ -627,6 +629,10 @@ impl Contract {
 
         pool.sponsor.require_auth();
 
+        if pool.is_closed {
+            env.panic_with_error(ContractError::PoolAlreadyClosed);
+        }
+
         if pool.state != PoolState::Disbursed && pool.state != PoolState::Cancelled {
             env.panic_with_error(ContractError::PoolNotDisbursedOrRefunded);
         }
@@ -779,6 +785,15 @@ impl Contract {
             .persistent()
             .get::<_, Pool>(&pool_id)
             .unwrap_or_else(|| env.panic_with_error(ContractError::PoolNotFound));
+
+        let applicant_key = (
+            Symbol::new(&env, APPLICANT_PREFIX),
+            pool_id,
+            student.clone(),
+        );
+        if !env.storage().persistent().has(&applicant_key) {
+            env.panic_with_error(ContractError::StudentHasNotApplied);
+        }
 
         if milestones.is_empty() {
             panic!("Milestones required");
@@ -1016,6 +1031,10 @@ impl Contract {
             .persistent()
             .get::<_, Pool>(&pool_id)
             .unwrap_or_else(|| env.panic_with_error(ContractError::PoolNotFound));
+
+        if pool.state == PoolState::Cancelled {
+            env.panic_with_error(ContractError::InvalidPoolState);
+        }
 
         let collected = pool.collected as i128;
 
@@ -1396,6 +1415,9 @@ impl Contract {
     /// # Panics
     /// - `ContractError::AdminNotSet` if no admin has been configured
     /// - `"Error(Auth, InvalidAction)"` if the caller is not the stored admin
+    /// - `ContractError::PoolNotFound` if the pool does not exist
+    /// - `ContractError::PoolIsClosed` if the pool is closed
+    /// - `ContractError::InvalidPoolState` if the pool is not `Active`
     /// - `"EmergencyWithdrawalAlreadyRequested"` if a request already exists for the pool
     pub fn request_emergency_withdraw(
         env: Env,
@@ -1414,6 +1436,20 @@ impl Contract {
             .unwrap_or_else(|| env.panic_with_error(ContractError::AdminNotSet));
         if stored_admin != admin {
             panic!("Error(Auth, InvalidAction)");
+        }
+
+        let pool: Pool = env
+            .storage()
+            .persistent()
+            .get::<_, Pool>(&pool_id)
+            .unwrap_or_else(|| env.panic_with_error(ContractError::PoolNotFound));
+
+        if pool.is_closed {
+            env.panic_with_error(ContractError::PoolIsClosed);
+        }
+
+        if pool.state != PoolState::Active {
+            env.panic_with_error(ContractError::InvalidPoolState);
         }
 
         let withdrawal_key = (Symbol::new(&env, EMERGENCY_WITHDRAWAL_PREFIX), pool_id);
