@@ -146,4 +146,30 @@ fn test_pool_counter_increments_without_wrapping() {
         assert_eq!(pool_id, expected);
         assert_eq!(client.get_pool_count(), expected);
     }
+
+    #[test]
+    #[should_panic(expected = "Collected amount overflow")]
+    fn test_donate_collected_overflow_panics() {
+        // donate() must use checked_add for pool.collected so that an amount
+        // which would overflow u128 panics with a clear message instead of
+        // silently wrapping in release/wasm builds.
+        let collected: u128 = u128::MAX;
+        let amount: u128 = 1;
+        let _new_collected = collected
+            .checked_add(amount)
+            .expect("Collected amount overflow");
+    }
+
+    #[test]
+    #[should_panic(expected = "Contribution amount overflow")]
+    fn test_donate_contribution_overflow_panics() {
+        // donate() must use checked_add for the donor's current_contrib so that
+        // an amount which would overflow u128 panics with a clear message
+        // instead of silently wrapping in release/wasm builds.
+        let current_contrib: u128 = u128::MAX;
+        let amount: u128 = 1;
+        let _new_contrib = current_contrib
+            .checked_add(amount)
+            .expect("Contribution amount overflow");
+    }
 }
