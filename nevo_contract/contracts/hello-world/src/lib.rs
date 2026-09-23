@@ -490,13 +490,9 @@ impl Contract {
 
         let new_collected = pool.collected + amount;
         let updated_pool = Pool {
-            sponsor: pool.sponsor,
-            goal: pool.goal,
             collected: new_collected,
-            is_closed: pool.is_closed,
-            state: pool.state,
-            application_deadline: pool.application_deadline,
             last_donation_at: env.ledger().timestamp(),
+            ..pool
         };
         env.storage().persistent().set(&pool_id, &updated_pool);
 
@@ -636,13 +632,8 @@ impl Contract {
         }
 
         let updated_pool = Pool {
-            sponsor: pool.sponsor,
-            goal: pool.goal,
-            collected: pool.collected,
             is_closed: true,
-            state: pool.state,
-            application_deadline: pool.application_deadline,
-            last_donation_at: pool.last_donation_at,
+            ..pool
         };
 
         env.storage().persistent().set(&pool_id, &updated_pool);
@@ -868,6 +859,18 @@ impl Contract {
             student.clone(),
         );
         env.storage().persistent().get::<_, Application>(&app_key)
+    }
+
+    /// Returns the stored application tuple (app_count, applicant, data) for a given pool and index, if it exists.
+    pub fn get_application_by_index(
+        env: Env,
+        pool_id: u32,
+        index: u32,
+    ) -> Option<(u32, Address, String)> {
+        let app_key = (Symbol::new(&env, APPLICATION_PREFIX), pool_id, index);
+        env.storage()
+            .persistent()
+            .get::<_, (u32, Address, String)>(&app_key)
     }
 
     /// Withdraw surplus funds not locked by active applications.
@@ -1342,13 +1345,9 @@ impl Contract {
             .expect("Collected amount overflow");
 
         let updated_pool = Pool {
-            sponsor: pool.sponsor,
-            goal: pool.goal,
             collected: new_collected,
-            is_closed: pool.is_closed,
-            state: pool.state,
-            application_deadline: pool.application_deadline,
             last_donation_at: env.ledger().timestamp(),
+            ..pool
         };
         env.storage().persistent().set(&pool_id, &updated_pool);
 

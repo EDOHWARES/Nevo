@@ -38,7 +38,7 @@ fn test_create_pool() {
     assert_eq!(pool.1, creator);
     assert_eq!(pool.2, 1_000_000_000u128);
     assert_eq!(pool.3, 0u128);
-    assert_eq!(pool.4, false);
+    assert!(!pool.4);
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn test_close_pool() {
     client.set_pool_state(&pool_id, &PoolState::Disbursed);
     client.close_pool(&pool_id);
     let pool = client.get_pool(&pool_id);
-    assert_eq!(pool.4, true);
+    assert!(pool.4);
 }
 
 #[test]
@@ -369,6 +369,35 @@ fn test_get_application_status() {
     assert_eq!(client.get_application_status(&pool_id, &student), approved);
 }
 
+#[test]
+fn test_get_application_by_index() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let student = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Test Pool"),
+        &String::from_str(&env, "Test"),
+        &1_000_000_000u128,
+        &100_000u64,
+    );
+
+    assert_eq!(client.get_application_by_index(&pool_id, &1), None);
+
+    let application_data = String::from_str(&env, "Application data");
+    client.apply_to_pool(&pool_id, &student, &application_data);
+
+    assert_eq!(
+        client.get_application_by_index(&pool_id, &1),
+        Some((1u32, student, application_data))
+    );
+    assert_eq!(client.get_application_by_index(&pool_id, &2), None);
+}
+
 // ============= PROTOCOL FEES TESTS =============
 
 #[test]
@@ -569,7 +598,7 @@ fn test_withdraw_unallocated_funds_respects_locked_funds_regression_949() {
     client.approve_application(&pool_id, &school, &student, &true);
 
     // Create Application record by claiming funds
-    let approved_amount = 60_000_000i128; // Approve 60M, locking 60M from withdrawal
+    let _approved_amount = 60_000_000i128; // Approve 60M, locking 60M from withdrawal
     let application_status = client.get_application_status(&pool_id, &student);
     assert_eq!(
         application_status,
