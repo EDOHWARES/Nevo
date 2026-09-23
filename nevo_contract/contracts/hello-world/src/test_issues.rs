@@ -543,7 +543,7 @@ fn test_close_disbursed_pool_succeeds() {
 
     // Verify closed state persists
     let pool = client.get_pool(&pool_id);
-    assert_eq!(pool.4, true);
+    assert!(pool.4);
 }
 
 /// Test 2: Close pool in Cancelled state succeeds
@@ -572,7 +572,7 @@ fn test_close_cancelled_pool_succeeds() {
 
     // Verify closed state persists
     let pool = client.get_pool(&pool_id);
-    assert_eq!(pool.4, true);
+    assert!(pool.4);
 }
 
 /// Test 3: Close pool in Active state fails with PoolNotDisbursedOrRefunded error
@@ -702,11 +702,11 @@ fn test_closed_state_persists() {
 
     // Verify is_closed returns true via get_pool
     let pool = client.get_pool(&pool_id);
-    assert_eq!(pool.4, true);
+    assert!(pool.4);
 
     // Verify state persists across multiple reads
     let pool2 = client.get_pool(&pool_id);
-    assert_eq!(pool2.4, true);
+    assert!(pool2.4);
 }
 
 // ============= ISSUE #942: MILESTONE SETUP/GETTER TESTS =============
