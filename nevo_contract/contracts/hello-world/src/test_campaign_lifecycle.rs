@@ -13,6 +13,149 @@ fn create_token(env: &Env, amount: i128, recipient: &Address) -> Address {
     token.address()
 }
 
+// ============= ISSUE #1294: CAMPAIGN LIST MANAGEMENT TESTS =============
+
+/// Test: get_all_campaigns returns an empty list initially
+#[test]
+fn test_get_all_campaigns_empty_initially() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 0);
+}
+
+/// Test: a single created campaign appears in the returned list
+#[test]
+fn test_get_all_campaigns_single() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Single Campaign"),
+        &String::from_str(&env, "Only one campaign"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 1);
+    assert_eq!(campaigns.get(0).unwrap(), pool_id);
+}
+
+/// Test: multiple created campaigns are all listed
+#[test]
+fn test_get_all_campaigns_multiple() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let id1 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Campaign One"),
+        &String::from_str(&env, "First campaign"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+    let id2 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Campaign Two"),
+        &String::from_str(&env, "Second campaign"),
+        &2_000_000_000u128,
+        &200_000u64,
+    );
+    let id3 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Campaign Three"),
+        &String::from_str(&env, "Third campaign"),
+        &3_000_000_000u128,
+        &200_000u64,
+    );
+
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 3);
+    assert!(campaigns.contains(id1));
+    assert!(campaigns.contains(id2));
+    assert!(campaigns.contains(id3));
+}
+
+/// Test: campaign order is preserved in the returned list
+#[test]
+fn test_get_all_campaigns_order_preserved() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let id1 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Order One"),
+        &String::from_str(&env, "First in order"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+    let id2 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Order Two"),
+        &String::from_str(&env, "Second in order"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+    let id3 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Order Three"),
+        &String::from_str(&env, "Third in order"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 3);
+    assert_eq!(campaigns.get(0).unwrap(), id1);
+    assert_eq!(campaigns.get(1).unwrap(), id2);
+    assert_eq!(campaigns.get(2).unwrap(), id3);
+}
+
+/// Test: list updates with new campaigns
+#[test]
+fn test_get_all_campaigns_updates_with_new_campaigns() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+
+    assert_eq!(client.get_all_campaigns().len(), 0);
+
+    let id1 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Update One"),
+        &String::from_str(&env, "First added"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 1);
+    assert_eq!(campaigns.get(0).unwrap(), id1);
+
+    let id2 = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Update Two"),
+        &String::from_str(&env, "Second added"),
+        &1_000_000_000u128,
+        &200_000u64,
+    );
+    let campaigns = client.get_all_campaigns();
+    assert_eq!(campaigns.len(), 2);
+    assert_eq!(campaigns.get(0).unwrap(), id1);
+    assert_eq!(campaigns.get(1).unwrap(), id2);
+}
+
 // ============= ISSUE #1090: INTEGRATION TESTS FOR CAMPAIGN LIFECYCLE =============
 
 /// Test 1: Create campaign (pool) with a creation fee
@@ -241,19 +384,6 @@ fn test_campaign_token_donations_lifecycle() {
     let donor1 = Address::generate(&env);
     let donor2 = Address::generate(&env);
     // Mint tokens to donors, not contract
-    let token = create_token(&env, 1_000_000_000i128, &donor1);
-    // Also give donor2 some tokens
-    let sac = StellarAssetClient::new(&env, &token);
-    sac.mint(&donor2, &500_000_000i128);
+    let token = create_token(&env, 1_000
 
-    // First token donation
-    client.donate_with_token(&pool_id, &donor1, &token, &200_000_000i128);
-    assert_eq!(client.get_total_raised(&pool_id), 200_000_000u128);
-
-    // Second token donation from different donor
-    client.donate_with_token(&pool_id, &donor2, &token, &300_000_000i128);
-    assert_eq!(client.get_total_raised(&pool_id), goal);
-
-    let pool = client.get_pool(&pool_id);
-    assert_eq!(pool.3, goal);
-}
+/* … truncated 584 chars — edit only what you need near the top … */
