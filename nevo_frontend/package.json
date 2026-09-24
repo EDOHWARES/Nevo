@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "$env:NEXT_DISABLE_SWC='1'; next build --webpack",
+    "build": "next build",
     "start": "next start",
     "test": "jest",
     "lint": "eslint",
