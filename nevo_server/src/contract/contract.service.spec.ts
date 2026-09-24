@@ -169,12 +169,34 @@ describe('ContractService', () => {
       const result = await service.getTotalRaisedOnChain(1);
       expect(result).toBe(0n);
     });
+
+    it('returns the total raised from the simulation result', async () => {
+      const mockAccount = new Account(Keypair.random().publicKey(), '0');
+      jest.spyOn(service['rpcServer'], 'getAccount').mockResolvedValue(mockAccount as any);
+      jest.spyOn(service['rpcServer'], 'simulateTransaction').mockResolvedValue({
+        result: { retval: nativeToScVal(5000n, { type: 'i128' }) },
+      } as any);
+
+      const result = await service.getTotalRaisedOnChain(1);
+      expect(result).toBe(5000n);
+    });
   });
 
   describe('getDonorCountOnChain', () => {
     it('returns 0 on RPC error', async () => {
       const result = await service.getDonorCountOnChain(1);
       expect(result).toBe(0);
+    });
+
+    it('returns the donor count from the simulation result', async () => {
+      const mockAccount = new Account(Keypair.random().publicKey(), '0');
+      jest.spyOn(service['rpcServer'], 'getAccount').mockResolvedValue(mockAccount as any);
+      jest.spyOn(service['rpcServer'], 'simulateTransaction').mockResolvedValue({
+        result: { retval: nativeToScVal(7, { type: 'u32' }) },
+      } as any);
+
+      const result = await service.getDonorCountOnChain(1);
+      expect(result).toBe(7);
     });
   });
 
