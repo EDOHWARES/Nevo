@@ -238,3 +238,97 @@ fn test_create_pool_pool_count_tracks_total() {
     );
     assert_eq!(client.get_pool_count(), 2);
 }
+
+/// Test 11: Invalid config with empty title fails validation
+#[test]
+#[should_panic(expected = "Title cannot be empty")]
+fn test_create_pool_invalid_empty_title() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    client.create_pool(
+        &Address::generate(&env),
+        &String::from_str(&env, ""),
+        &String::from_str(&env, "Valid description"),
+        &1_000_000u128,
+        &100_000u64,
+    );
+}
+
+/// Test 12: Invalid config with empty description fails validation
+#[test]
+#[should_panic(expected = "Description cannot be empty")]
+fn test_create_pool_invalid_empty_description() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    client.create_pool(
+        &Address::generate(&env),
+        &String::from_str(&env, "Valid Title"),
+        &String::from_str(&env, ""),
+        &1_000_000u128,
+        &100_000u64,
+    );
+}
+
+/// Test 13: Invalid config with zero duration fails validation
+#[test]
+#[should_panic(expected = "Duration must be greater than zero")]
+fn test_create_pool_invalid_zero_duration() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    client.create_pool(
+        &Address::generate(&env),
+        &String::from_str(&env, "Valid Title"),
+        &String::from_str(&env, "Valid description"),
+        &1_000_000u128,
+        &0u64,
+    );
+}
+
+/// Test 14: Pool state is Active immediately after creation (before any donation)
+#[test]
+fn test_create_pool_state_active_before_donation() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Fresh Pool"),
+        &String::from_str(&env, "Just created"),
+        &1_000_000_000u128,
+        &100_000u64,
+    );
+
+    // A freshly created pool is Active: not closed and no funds raised yet
+    let pool = client.get_pool(&pool_id);
+    assert_eq!(pool.4, false); // is_closed = false
+    assert_eq!(pool.3, 0u128); // total_raised = 0
+}
+
+/// Test 15: Pool metrics start at zero for a newly created pool
+#[test]
+fn test_create_pool_metrics_start_at_zero() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    let creator = Address::generate(&env);
+    let pool_id = client.create_pool(
+        &creator,
+        &String::from_str(&env, "Zero Metrics Pool"),
+        &String::from_str(&env, "Metrics start at zero"),
+        &5_000_000_000u128,
+        &100_000u64,
+    );
+
+    assert_eq!(client.get_total_raised(&pool_id), 0u128);
+    assert_eq!(client.get_donor_count(&pool_id), 0u32);
+    assert_eq!(client.get_pool_count(), 1);
+}
