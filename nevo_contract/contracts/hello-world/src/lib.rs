@@ -651,6 +651,17 @@ impl Contract {
         );
     }
 
+    /// Check if a pool is closed.
+    pub fn is_closed(env: Env, pool_id: u32) -> bool {
+        let pool: Pool = env
+            .storage()
+            .persistent()
+            .get::<_, Pool>(&pool_id)
+            .unwrap_or_else(|| env.panic_with_error(ContractError::PoolNotFound));
+
+        pool.is_closed
+    }
+
     /// Get the total number of pools.
     pub fn get_pool_count(env: Env) -> u32 {
         let pool_count_key = Symbol::new(&env, POOL_COUNT);
@@ -658,6 +669,16 @@ impl Contract {
             .persistent()
             .get::<_, u32>(&pool_count_key)
             .unwrap_or(0)
+    }
+
+    /// Get all campaign (pool) IDs.
+    pub fn get_all_campaigns(env: Env) -> Vec<u32> {
+        let count = Self::get_pool_count(env.clone());
+        let mut list = Vec::new(&env);
+        for id in 1..=count {
+            list.push_back(id);
+        }
+        list
     }
 
     /// Get the number of unique donors for a pool.
@@ -1528,3 +1549,5 @@ mod test_pool_creation;
 mod test_pool_retrieval;
 mod test_campaign_lifecycle;
 mod test_withdraw;
+mod test_pool_closure_state_validation;
+mod test_pool_closure_authorization;

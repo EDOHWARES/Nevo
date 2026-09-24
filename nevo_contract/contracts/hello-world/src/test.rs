@@ -761,7 +761,7 @@ fn test_set_creation_fee_emits_event() {
     // env.events().all() returns Vec<(Address, Vec<Val>, Val)>.
     let events = env.events().all();
     assert!(
-        !events.is_empty(),
+        !events.events().is_empty(),
         "Expected at least one event after set_creation_fee"
     );
 }
