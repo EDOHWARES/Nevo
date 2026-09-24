@@ -37,6 +37,7 @@ async function bootstrap() {
     )
     .addTag('auth', 'Stellar wallet challenge/response authentication')
     .addTag('pools', 'Donation pools')
+    .addTag('donations', 'Donations to pools')
     .addTag('transactions', 'Signed transaction submission')
     .addTag('contract', 'Smart contract transaction submission')
     .build();

@@ -41,6 +41,7 @@ export class CreatePoolDto {
     example: '1000000000',
   })
   @IsNumberString()
+  @Matches(/^[1-9][0-9]*$/, { message: 'goal must be a positive integer' })
   goal: string;
 
   @ApiPropertyOptional({

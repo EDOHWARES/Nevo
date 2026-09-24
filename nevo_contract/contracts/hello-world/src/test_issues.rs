@@ -1194,26 +1194,13 @@ fn test_get_pool_school_fails_for_non_school_pool() {
 //     the field, its getter, and the `env.ledger().timestamp()` writes in
 //     `donate()`/`donate_with_token()` did not exist before; see lib.rs).
 //
-// NOTE: Tests 1-3 encode the exact semantics issue #1059 asks for
+// Tests 1-3 encode the unique-donor semantics issue #1059 asks for
 // ("0 -> 1 on first contribution", "stays at 1 on a repeat contribution",
-// "1 -> 2 on a new contributor"). They currently FAIL: both `donate()`
-// and `donate_with_token()` bump `d_count` unconditionally on every call
-// *and* bump it again inside the "is this donor new?" branch, so a pool's
-// very first contribution already leaves `d_count` at 2, and every
-// subsequent contribution (repeat or new donor) keeps incrementing it
-// further. That double-increment is a pre-existing bug in the donor-count
-// bookkeeping, not something introduced here -- these tests are left
-// failing on purpose to document it precisely, per instruction, rather
-// than silently asserting the buggy value or fixing contract logic that
-// wasn't part of this task. `cargo test` for this crate will not be fully
-// green until that bug is fixed.
+// "1 -> 2 on a new contributor"). `d_count` increments only when a donor
+// contributes to the pool for the first time.
 
 /// Test 1 (issue #1059, requirement 1): a pool's first-ever contribution
 /// should take contributor_count from 0 to 1.
-///
-/// Currently FAILS: `donate()`'s unconditional `d_count` bump plus the
-/// "new donor" bump both fire on the very first contribution, leaving
-/// `get_donor_count` at 2 instead of 1.
 #[test]
 fn test_first_contribution_increments_contributor_count_from_zero_to_one() {
     let env = Env::default();
@@ -1250,10 +1237,6 @@ fn test_first_contribution_increments_contributor_count_from_zero_to_one() {
 /// Test 2 (issue #1059, requirement 2): a second contribution from the
 /// *same* contributor must not be double-counted -- contributor_count
 /// should stay at 1.
-///
-/// Currently FAILS: `donate()`'s unconditional `d_count` bump fires again
-/// on the repeat contribution (the "new donor" bump correctly does not),
-/// so `get_donor_count` keeps climbing past 1 instead of holding steady.
 #[test]
 fn test_repeat_contribution_from_same_donor_leaves_contributor_count_at_one() {
     let env = Env::default();
@@ -1288,9 +1271,6 @@ fn test_repeat_contribution_from_same_donor_leaves_contributor_count_at_one() {
 /// Test 3 (issue #1059, requirement 3): a contribution from a *different*,
 /// new contributor to the same pool should take contributor_count from 1
 /// to 2.
-///
-/// Currently FAILS for the same reason as tests 1 and 2: the
-/// unconditional `d_count` bump inflates the count on every call.
 #[test]
 fn test_new_contributor_increments_contributor_count_from_one_to_two() {
     let env = Env::default();

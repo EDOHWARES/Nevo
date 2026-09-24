@@ -235,8 +235,6 @@ fn test_get_contribution_tracks_individual_amounts() {
 }
 
 /// Test 11: Donor count after multiple unique donors
-/// NOTE: The contract's d_count increments once per donation call AND once
-/// per new unique donor. So 3 unique single-time donors produce d_count = 6.
 #[test]
 fn test_get_donor_count_after_unique_donors() {
     let env = Env::default();
@@ -256,16 +254,12 @@ fn test_get_donor_count_after_unique_donors() {
 
     let donor1 = Address::generate(&env);
     client.donate(&pool_id, &donor1, &10_000_000u128);
-    // d_count incremented: +1 (per-call) +1 (new donor) = 2
-    assert_eq!(client.get_donor_count(&pool_id), 2);
+    assert_eq!(client.get_donor_count(&pool_id), 1);
 
     let donor2 = Address::generate(&env);
     client.donate(&pool_id, &donor2, &20_000_000u128);
-    // d_count incremented again: 2 + 1 (per-call) + 1 (new donor) = 4
-    assert_eq!(client.get_donor_count(&pool_id), 4);
+    assert_eq!(client.get_donor_count(&pool_id), 2);
 
-    // Same donor again - only per-call increment
     client.donate(&pool_id, &donor1, &30_000_000u128);
-    // d_count: 4 + 1 (per-call only, not new) = 5
-    assert_eq!(client.get_donor_count(&pool_id), 5);
+    assert_eq!(client.get_donor_count(&pool_id), 2);
 }
