@@ -346,11 +346,20 @@ impl Contract {
         goal: u128,
         application_deadline: u64,
     ) -> u32 {
+        if title.len() == 0 {
+            panic!("Title cannot be empty");
+        }
         if title.len() > MAX_TITLE_LENGTH {
             panic!("Title exceeds maximum length");
         }
+        if description.len() == 0 {
+            panic!("Description cannot be empty");
+        }
         if description.len() as u32 > MAX_DESCRIPTION_LENGTH as u32 {
             panic!("Description exceeds maximum length");
+        }
+        if application_deadline == 0 {
+            panic!("Duration must be greater than zero");
         }
         if application_deadline <= env.ledger().timestamp() {
             env.panic_with_error(ContractError::InvalidDeadline);
@@ -655,6 +664,20 @@ impl Contract {
             (POOL_CLOSED, pool_id),
             (updated_pool.sponsor.clone(), updated_pool.collected),
         );
+    }
+
+    /// Return campaign ids in creation order.
+    pub fn get_all_campaigns(env: Env) -> Vec<u32> {
+        let count = Self::get_pool_count(env.clone());
+        let mut campaigns = Vec::new(&env);
+        let mut id = 1u32;
+        while id <= count {
+            if env.storage().persistent().has(&id) {
+                campaigns.push_back(id);
+            }
+            id += 1;
+        }
+        campaigns
     }
 
     /// Get the total number of pools.
