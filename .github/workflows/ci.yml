@@ -70,7 +70,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+          targets: wasm32v1-none
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -83,7 +83,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Build contract
-        run: cargo build --release --target wasm32-unknown-unknown
+        run: cargo build --release --target wasm32v1-none
 
       - name: Run tests
         run: cargo test --lib

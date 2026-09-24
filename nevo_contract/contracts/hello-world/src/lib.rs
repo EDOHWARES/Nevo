@@ -514,16 +514,6 @@ impl Contract {
         };
         env.storage().persistent().set(&pool_id, &updated_pool);
 
-        let donor_index: u32 = env
-            .storage()
-            .persistent()
-            .get::<_, u32>(&(pool_id, "d_count"))
-            .unwrap_or(0);
-        let _ = donor;
-        env.storage()
-            .persistent()
-            .set(&(pool_id, "d_count"), &(donor_index + 1));
-
         // Emit donation event
         env.events().publish(
             (DONATION_MADE, pool_id),
@@ -1187,13 +1177,13 @@ impl Contract {
             .storage()
             .persistent()
             .get::<_, Address>(&admin_key)
-            .expect("Admin not set");
+            .unwrap_or_else(|| env.panic_with_error(ContractError::AdminNotSet));
         if stored_admin != admin {
-            panic!("Unauthorized admin");
+            env.panic_with_error(ContractError::UnauthorizedAdmin);
         }
 
         if fee < 0 {
-            panic!("InvalidFee");
+            env.panic_with_error(ContractError::InvalidFee);
         }
 
         let fee_key = Symbol::new(&env, CREATION_FEE_KEY);
@@ -1385,15 +1375,6 @@ impl Contract {
             ..pool
         };
         env.storage().persistent().set(&pool_id, &updated_pool);
-
-        let donor_index: u32 = env
-            .storage()
-            .persistent()
-            .get::<_, u32>(&(pool_id, "d_count"))
-            .unwrap_or(0);
-        env.storage()
-            .persistent()
-            .set(&(pool_id, "d_count"), &(donor_index + 1));
 
         // Emit contribution event with privacy flag (true = private donation)
         env.events().publish(
