@@ -181,6 +181,24 @@ describe('CreatePoolDto (POST /pools body contract)', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it('rejects a zero goal with 400', async () => {
+    await request(app.getHttpServer())
+      .post('/pools')
+      .send({ ...validBody, goal: '0' })
+      .expect(400);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a negative goal with 400', async () => {
+    await request(app.getHttpServer())
+      .post('/pools')
+      .send({ ...validBody, goal: '-1' })
+      .expect(400);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('rejects unknown extra fields under forbidNonWhitelisted with 400', async () => {
     await request(app.getHttpServer())
       .post('/pools')
