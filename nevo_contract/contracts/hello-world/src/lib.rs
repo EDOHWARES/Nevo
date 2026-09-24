@@ -60,9 +60,11 @@ const POOL_DEADLINE_PREFIX: &str = "pool_deadline";
 const REFUND_GRACE_PERIOD_LEDGERS: u32 = 17_280; // ~24 hours at 5s/ledger
 
 // Pool metadata validation constraints
+const MAX_TITLE_LENGTH: u32 = 256;
 const MAX_DESCRIPTION_LENGTH: usize = 500;
 const MAX_URL_LENGTH: usize = 256;
 const MAX_IMAGE_HASH_LENGTH: usize = 64;
+const POOL_METADATA_PREFIX: &str = "metadata";
 
 // ─── Event Topics ────────────────────────────────────────────────────────
 
@@ -125,6 +127,10 @@ pub enum ContractError {
     SchoolNotRegistered = 14,
     /// Pool has already been closed and cannot be closed again.
     PoolAlreadyClosed = 15,
+    /// A campaign with this id is already stored.
+    DuplicateCampaign = 16,
+    /// Deadline is not strictly later than the current ledger timestamp.
+    InvalidDeadline = 17,
 }
 
 // Helper functions for timestamp/deadline edge-case tests
@@ -340,8 +346,14 @@ impl Contract {
         goal: u128,
         application_deadline: u64,
     ) -> u32 {
+        if title.len() > MAX_TITLE_LENGTH {
+            panic!("Title exceeds maximum length");
+        }
         if description.len() as u32 > MAX_DESCRIPTION_LENGTH as u32 {
             panic!("Description exceeds maximum length");
+        }
+        if application_deadline <= env.ledger().timestamp() {
+            env.panic_with_error(ContractError::InvalidDeadline);
         }
 
         let pool_count_key = Symbol::new(&env, POOL_COUNT);
@@ -354,7 +366,11 @@ impl Contract {
         let pool_id = pool_count + 1;
         pool_count = pool_id;
 
-        let metadata_key = (Symbol::new(&env, SAVED_METADATA_PREFIX), pool_id);
+        if env.storage().persistent().has(&pool_id) {
+            env.panic_with_error(ContractError::DuplicateCampaign);
+        }
+
+        let metadata_key = (Symbol::new(&env, POOL_METADATA_PREFIX), pool_id);
         env.storage()
             .persistent()
             .set(&metadata_key, &(title.clone(), description.clone()));
@@ -556,7 +572,7 @@ impl Contract {
     /// Get pool metadata as a tuple (title, description).
     /// Returns empty strings if the pool or metadata does not exist.
     pub fn get_pool_metadata(env: Env, pool_id: u32) -> (String, String) {
-        let metadata_key = (Symbol::new(&env, "metadata"), pool_id);
+        let metadata_key = (Symbol::new(&env, POOL_METADATA_PREFIX), pool_id);
         env.storage()
             .persistent()
             .get::<_, (String, String)>(&metadata_key)
@@ -1528,3 +1544,4 @@ mod test_pool_creation;
 mod test_pool_retrieval;
 mod test_campaign_lifecycle;
 mod test_withdraw;
+mod test_issue_1290_campaign_creation;

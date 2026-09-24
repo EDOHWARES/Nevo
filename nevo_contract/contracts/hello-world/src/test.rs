@@ -758,10 +758,9 @@ fn test_set_creation_fee_emits_event() {
     client.set_creation_fee(&admin, &new_fee);
 
     // Verify the event was emitted with the correct topic and data.
-    // env.events().all() returns Vec<(Address, Vec<Val>, Val)>.
     let events = env.events().all();
     assert!(
-        !events.is_empty(),
+        !events.events().is_empty(),
         "Expected at least one event after set_creation_fee"
     );
 }
